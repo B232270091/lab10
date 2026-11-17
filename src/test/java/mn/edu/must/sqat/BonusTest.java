@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BonusTest {
 
@@ -21,4 +22,41 @@ class BonusTest {
         // score at 51 reaches return without being overwritten at line 54.
         assertEquals(5, DataFlowTargets.bonus(new int[]{0, 1}, 1));
     }
+
+    @Test
+    @DisplayName("B3 ALL-DU: present 35->50F; best 37->53F; score 49->56")
+    void emptyBelowThreshold() {
+        assertEquals(0, DataFlowTargets.bonus(new int[]{}, 1));
+    }
+
+    @Test
+    @DisplayName("B4 ALL-DU: present 35->50T; score 51->56; attendance 31->38F")
+    void emptyThresholdZero() {
+        assertEquals(5, DataFlowTargets.bonus(new int[]{}, 0));
+    }
+
+    @Test
+    @DisplayName("B5 ALL-DU: a 38->39F; best 37->53F; score 49->56")
+    void allAbsentDays() {
+        assertEquals(0, DataFlowTargets.bonus(new int[]{0, -1, 0}, 1));
+    }
+
+    @Test
+    @DisplayName("B6 ALL-DU: score 51->54->56; best 43->53T; threshold 31->50T")
+    void fivePresentDays() {
+        assertEquals(8, DataFlowTargets.bonus(new int[]{1, 1, 1, 1, 1}, 5));
+    }
+
+    @Test
+    @DisplayName("B7 ALL-DU: attendance 31->32aT; threshold short-circuited")
+    void invalidNull() {
+        assertThrows(IllegalArgumentException.class, () -> DataFlowTargets.bonus(null, 0));
+    }
+
+    @Test
+    @DisplayName("B8 ALL-DU: attendance 31->32aF; threshold 31->32bT")
+    void invalidThreshold() {
+        assertThrows(IllegalArgumentException.class, () -> DataFlowTargets.bonus(new int[]{}, -1));
+    }
+
 }

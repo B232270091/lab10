@@ -113,6 +113,147 @@ Null/сөрөг threshold-ийн true ирмэг болон 33-р мөрийн t
 All-defs хангагдсан нь branch 100% гэсэн үг биш.
 
 
+## B bonus бүрэн DU анализ
+
+### B1 CFG
+
+![bonus control flow](cfg-bonus.png)
+
+32-р мөрийн short circuit-ийг `32a: attendance == null`, `32b: threshold < 0`
+гэж салгасан. 38-р мөрийн `init` нь массивын илэрхийллийг нэг удаа унших
+c-use, `38T/F` нь дараагийн элемент байгаа эсэхийн p-use, `38a` нь дараагийн
+элементийг `a`-д оноох definition юм. `38 advance` нь давталтын дараагийн
+алхам руу шилжихийг тэмдэглэнэ. Зураг дахь ирмэг бүрд түүнийг дайрдаг нэг
+бодит JUnit методын нэр бий; энэ нь тухайн ирмэгийг дайрдаг бүх тестийн
+бүрэн жагсаалт гэсэн үг биш.
+
+### B2 Definition ба use
+
+```text
+31: def attendance, threshold
+32a: p-use attendance                  // null T/F
+32b: p-use threshold                   // <0 T/F; 32aT үед үнэлэхгүй
+33: throw                             // эдгээр хувьсагчийн def/use байхгүй
+35: def present
+36: def streak
+37: def best
+38 init: c-use attendance              // массивын илэрхийллийг унших
+38 T/F: p-use attendance               // дараагийн элемент байгаа эсэх
+38a: def a                            // дараагийн элементийг оноох
+39: p-use a                           // >0 T/F
+40: c-use present; def present
+41: c-use streak; def streak
+42: p-use streak, best                 // > T/F
+43: c-use streak; def best
+46: def streak                        // өмнөх streak definition-ийг KILL
+49: def score
+50: p-use present, threshold           // >= T/F
+51: def score                         // 49-ийг KILL
+53: p-use best                         // >=5 T/F
+54: c-use score; def score             // RHS use эхэлж болно
+56: c-use score
+```
+
+### B3 Бүх боломжит DU хос
+
+Доорх хүснэгт p-use-ийн T/F ирмэгийг тусад нь авч **34 боломжит шаардлага**
+тоолсон. `attendance`-ийн 38 init c-use-ийг тусад нь тооцохгүй, зөвхөн лабт
+онцолсон 38T/F p-use-ийг тооцвол 33 болно; хоёр convention-ий бүх шаардлага
+хамрагдсан. `38a` нь файлын 38-р мөрийн `a` definition, `init` нь мөн 38-р
+мөрийн массивыг унших үе шатыг заана. Зам бүр definition-ээс тухайн use
+хүртэл явна; өөр хувьсагчийн definition тухайн замыг таслахгүй.
+
+| ID | Хувьсагч | Def мөр | Use мөр | c/p | Def-clear зам | Тестийн ID | Хамрагдсан |
+|---|---|---:|---|---|---|---|---|
+| BDU01 | a | 38 | 39F | p | 38a → 39F | B1, B2, B5 | Тийм |
+| BDU02 | a | 38 | 39T | p | 38a → 39T | B1, B2, B6 | Тийм |
+| BDU03 | attendance | 31 | 32aF | p | 31 → 32aF | B1, B2, B3, B4, B5, B6, B8 | Тийм |
+| BDU04 | attendance | 31 | 32aT | p | 31 → 32aT | B7 | Тийм |
+| BDU05 | attendance | 31 | 38 | c | 31 → 32aF → 32bF → 35 → 36 → 37 → 38init | B1, B2, B3, B4, B5, B6 | Тийм |
+| BDU06 | attendance | 31 | 38F | p | 31 → 32aF → 32bF → 35 → 36 → 37 → 38init → 38F | B1, B2, B3, B4, B5, B6 | Тийм |
+| BDU07 | attendance | 31 | 38T | p | 31 → 32aF → 32bF → 35 → 36 → 37 → 38init → 38T | B1, B2, B5, B6 | Тийм |
+| BDU08 | best | 37 | 42T | p | 37 → 38init → 38T → 38a → 39T → 40 → 41 → 42T | B1, B2, B6 | Тийм |
+| BDU09 | best | 37 | 53F | p | 37 → 38init → 38F → 49 → 50F → 53F | B3, B4, B5 | Тийм |
+| BDU10 | best | 43 | 42F | p | 43 → 38T → 38a → 39F → 46 → 38T → 38a → 39T → 40 → 41 → 42F | B1 | Тийм |
+| BDU11 | best | 43 | 42T | p | 43 → 38T → 38a → 39T → 40 → 41 → 42T | B1, B6 | Тийм |
+| BDU12 | best | 43 | 53F | p | 43 → 38F → 49 → 50T → 51 → 53F | B2 | Тийм |
+| BDU13 | best | 43 | 53T | p | 43 → 38F → 49 → 50T → 51 → 53T | B1, B6 | Тийм |
+| BDU14 | present | 35 | 40 | c | 35 → 36 → 37 → 38init → 38T → 38a → 39T → 40 | B1, B2, B6 | Тийм |
+| BDU15 | present | 35 | 50F | p | 35 → 36 → 37 → 38init → 38F → 49 → 50F | B3, B5 | Тийм |
+| BDU16 | present | 35 | 50T | p | 35 → 36 → 37 → 38init → 38F → 49 → 50T | B4 | Тийм |
+| BDU17 | present | 40 | 40 | c | 40 → 41 → 42T → 43 → 38T → 38a → 39T → 40 | B1, B6 | Тийм |
+| BDU18 | present | 40 | 50F | p | 40 → 41 → 42F → 38F → 49 → 50F | B1 | Тийм |
+| BDU19 | present | 40 | 50T | p | 40 → 41 → 42T → 43 → 38F → 49 → 50T | B2, B6 | Тийм |
+| BDU20 | score | 49 | 54 | c | 49 → 50F → 53T → 54 | B1 | Тийм |
+| BDU21 | score | 49 | 56 | c | 49 → 50F → 53F → 56 | B3, B5 | Тийм |
+| BDU22 | score | 51 | 54 | c | 51 → 53T → 54 | B6 | Тийм |
+| BDU23 | score | 51 | 56 | c | 51 → 53F → 56 | B2, B4 | Тийм |
+| BDU24 | score | 54 | 56 | c | 54 → 56 | B1, B6 | Тийм |
+| BDU25 | streak | 36 | 41 | c | 36 → 37 → 38init → 38T → 38a → 39T → 40 → 41 | B1, B6 | Тийм |
+| BDU26 | streak | 41 | 41 | c | 41 → 42T → 43 → 38T → 38a → 39T → 40 → 41 | B1, B6 | Тийм |
+| BDU27 | streak | 41 | 42F | p | 41 → 42F | B1 | Тийм |
+| BDU28 | streak | 41 | 42T | p | 41 → 42T | B1, B2, B6 | Тийм |
+| BDU29 | streak | 41 | 43 | c | 41 → 42T → 43 | B1, B2, B6 | Тийм |
+| BDU30 | streak | 46 | 41 | c | 46 → 38T → 38a → 39T → 40 → 41 | B1, B2 | Тийм |
+| BDU31 | threshold | 31 | 32bF | p | 31 → 32aF → 32bF | B1, B2, B3, B4, B5, B6 | Тийм |
+| BDU32 | threshold | 31 | 32bT | p | 31 → 32aF → 32bT | B8 | Тийм |
+| BDU33 | threshold | 31 | 50F | p | 31 → 32aF → 32bF → 35 → 36 → 37 → 38init → 38F → 49 → 50F | B1, B3, B5 | Тийм |
+| BDU34 | threshold | 31 | 50T | p | 31 → 32aF → 32bF → 35 → 36 → 37 → 38init → 38F → 49 → 50T | B2, B4, B6 | Тийм |
+
+**Kill.** 46-р мөр нь түүнд хүрч ирсэн `streak`-ийн 36, 41 эсвэл өмнөх
+давталтын 46 definition-ийг kill хийнэ. 41-ийн шинэ definition мөн өмнөх
+streak-ийг kill хийнэ, гэхдээ RHS use нь үүнээс өмнө хийгдэнэ. Иймээс
+`41 → ... → 46 → ... → 41` зам дээр эхний 41-ийн утга дараагийн 41-ийн
+RHS-д хүрэхгүй; хүснэгтийн 41→41 нь тасалдалгүй хоёр дараалсан ирцээр
+биелнэ. 46 нь present, best, score-ийг kill хийхгүй.
+
+| Хассан хос эсвэл салаа | Үндэслэл |
+|---|---|
+| streak 36→42, 36→43 | Аль ч замд 41 ажиллаж 36-ийн утгыг use-ээс өмнө kill хийнэ. |
+| streak 46→42, 46→43 | Дараагийн эерэг a дээр 41 ажиллаж 46-г kill хийсний дараа л 42, 43-т хүрнэ. |
+| best 37→42F | 37-ийн best=0 хэвээр бол энэ нь эхний эерэг ирц; 41-ийн streak=1 тул 42 заавал T. |
+| best 37→53T | 43 ажиллаагүй үед best=0, тиймээс best>=5 үнэн болохгүй. |
+| score 54→54 | 54-өөс буцах давталтын ирмэг байхгүй учир ижил гүйцэтгэлд дахин 54-т хүрэхгүй. |
+| score 49→56, 50T-ээр дайрсан зам | 51 нь 49-ийг kill хийнэ; зөвхөн 50F, 53F зам нь хүснэгтийн 49→56 хос болно. |
+| present 35→50, 40-өөр дайрсан зам | Эхний 40 нь 35-ийг kill хийнэ; 35→50 нь зөвхөн эерэг ирцгүй үед биелнэ. |
+| threshold 31→32b, 32aT зам | Short circuit-ийн улмаас threshold-ийг энэ зам дээр уншихгүй; 32b нь non-null attendance-тай үед л use болно. |
+
+### B4 ALL DU PAIRS тестүүд
+
+| ID | Бодит метод | attendance | threshold | Expected |
+|---|---|---|---:|---|
+| B1 | `allDefsScoreThree` | [1,1,1,1,1,0,1] | 8 | 3 |
+| B2 | `allDefsScoreFive` | [0,1] | 1 | 5 |
+| B3 | `emptyBelowThreshold` | [] | 1 | 0 |
+| B4 | `emptyThresholdZero` | [] | 0 | 5 |
+| B5 | `allAbsentDays` | [0,-1,0] | 1 | 0 |
+| B6 | `fivePresentDays` | [1,1,1,1,1] | 5 | 8 |
+| B7 | `invalidNull` | null | 0 | IllegalArgumentException |
+| B8 | `invalidThreshold` | [] | -1 | IllegalArgumentException |
+
+ALL-DEFS шатны B1/B2 дээр B3–B8-ыг нэмсэн. Энэ шатанд bonus-ийн **8**,
+gcd-ийн **3**, нийт **11 тест** тэнцсэн. B3 нь score 49→56, B4 нь present
+35→50T, B6 нь score 51→54-ийг шинээр хамарна. B7/B8 нь validation-ийн хоёр
+true ирмэгийг хамруулна. Гаралт:
+[mvn-verify-alldu.txt](results/mvn-verify-alldu.txt),
+[jacoco-alldu.csv](results/jacoco-alldu.csv).
+
+### Branch ба DU хамралтын ялгаа
+
+ALL-DEFS-ийн branch 14/16 буюу 87.5% боловч бүх definition ядаж нэг use-д
+хүрсэн. ALL-DU шатанд branch 16/16 буюу 100% болсон. Гэхдээ branch 100%
+болох нь DU хос бүрийг хамарсныг дангаараа батлахгүй. Жишээ нь B1, B2, B7,
+B8 нь бүх branch-ийг хамарна: B1 дотор 39T/F, 42T/F, 38T/F; B1/B2 дотор
+50T/F, 53T/F; B7/B8 дотор 32aT/F, 32bT/F бий. Тэгсэн ч энэ дөрвөн
+тестэд `score 49→56` ба `score 51→54`, `present 35→50T/F`, `best 37→53F`
+хосууд байхгүй. Энэ subset-ийг gcd-ийн 3 тесттэй хамт тусад нь ажиллуулж
+**7 тест**, branch **16/16** гарсныг
+[mvn-verify-branch-only.txt](results/mvn-verify-branch-only.txt),
+[jacoco-branch-only.csv](results/jacoco-branch-only.csv)-д хадгалсан.
+DU хүснэгт нь нэг use-д аль definition-ээс ирснийг ялгадаг; JaCoCo branch
+нь энэ мэдээллийг хэмждэггүй.
+
+
 ## AI тусламж
 
 OpenAI Codex-ийг DU шинжилгээ, тест бичих, тест ажиллуулах болон тайлангийн
