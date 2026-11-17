@@ -1,0 +1,11 @@
+java -version
+openjdk version "17.0.21" 2026-10-20
+OpenJDK Runtime Environment Temurin-17.0.21+9 (build 17.0.21+9)
+OpenJDK 64-Bit Server VM Temurin-17.0.21+9 (build 17.0.21+9, mixed mode, sharing)
+
+mvn -version
+Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5)
+Maven home: C:\Users\enhta\Desktop\lab9\.lab10-work\tools\apache-maven-3.9.16
+Java version: 17.0.21, vendor: Eclipse Adoptium, runtime: C:\Users\enhta\Desktop\lab9\.lab10-work\tools\jdk-17.0.21+9
+Default locale: en_US, platform encoding: UTF-8
+OS name: "windows 11", version: "10.0", arch: "amd64", family: "windows"
