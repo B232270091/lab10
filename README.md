@@ -5,7 +5,7 @@
 **Хичээл:** F.CSA313 Программ хангамжийн чанарын баталгаа ба тест
 
 `DataFlowTargets.java` эх кодын definition–use хосуудыг def-clear замаар
-шинжилж, JUnit тестээр хамруулна. Эх кодын мөрийн дугаарлалтыг starter
+шинжилж, JUnit тестээр хамруулсан. Эх кодын мөрийн дугаарлалтыг starter
 хувилбараар авсан. Predicate-ийн use-ийг гарах T/F ирмэгээр нь тусад нь
 тоолно. `d -> u` замд тухайн хувьсагчийг дахин тодорхойлоогүй байна;
 `streak = streak + 1` зэрэг мөрийн RHS use нь LHS definition-ээс өмнө болно.
@@ -26,7 +26,7 @@ Default locale: en_US, platform encoding: UTF-8
 OS name: "windows 11", version: "10.0", arch: "amd64", family: "windows"
 ```
 
-Maven Compiler Plugin-ийг 3.15.0 дээр тогтоосон тул хуучин Maven ч `release=17` тохиргоог хэрэглэнэ. `src/main` нь Starter-тэй ижил.
+Java 17-ийн `release` тохиргоог тогтвортой хэрэглэхийн тулд Maven Compiler Plugin-ийг 3.15.0 дээр тогтоосон. `src/main` нь Starter-тэй ижил.
 
 ## A gcd
 
@@ -73,47 +73,7 @@ Maven Compiler Plugin-ийг 3.15.0 дээр тогтоосон тул хууч�
 GDU11, GDU12-ыг хамарна. G1 ба G2 нийлээд хүснэгтийн бүх хосыг хамардаг;
 G3 нь оролтын нэмэлт шалгалт юм. Гаралт: [results/mvn-verify-gcd.txt](results/mvn-verify-gcd.txt).
 
-## B bonus эхний шат ALL DEFS
-
-`BonusTest.java`-д `allDefsScoreThree` (B1) ба `allDefsScoreFive` (B2) гэсэн
-**2 тест** all-defs хангана. Gcd-ийн 3 тесттэй нийлээд Maven **5 тест** ажиллуулна.
-
-| Definition | Use-д хүргэх тест ба зам |
-|---|---|
-| attendance 31 | B1: 32aF, 38 init, 38T/F |
-| threshold 31 | B1: 32bF, 50F; B2: 50T |
-| a 38 | B1: 39T/F |
-| present 35 | B1: эхний 40-ийн RHS |
-| present 40 | B1: дараагийн 40-ийн RHS, эцэст нь 50F |
-| streak 36 | B1: эхний 41-ийн RHS |
-| streak 41 | B1: 42T/F, 43, дараагийн 41-ийн RHS |
-| streak 46 | B1: тасалсны дараах 41-ийн RHS |
-| best 37 | B1: эхний 42T |
-| best 43 | B1: дараагийн 42T/F, 53T |
-| score 49 | B1: 49 → 50F → 53T → 54 |
-| score 51 | B2: 51 → 53F → 56 |
-| score 54 | B1: 54 → 56 |
-
-Нэг тест хүрэлцэхгүй. 49-р мөрийн `score` use-д хүрэх цорын ганц боломж нь
-50F дараа 53T болж 54-ийн RHS-д уншигдах, эсвэл 50F ба 53F болж 56-д
-уншигдах явдал юм. Харин 51-ийн definition-д хүрэхэд 50T байх ёстой;
-51 нь 49-ийг use-ээс нь өмнө kill хийнэ. Иймээс score 49 ба 51-ийн
-definition-үүдийг нэг гүйцэтгэлд хоёуланг нь use-д хүргэх боломжгүй, доод
-хязгаар нь 2. Дээрх B1 ба B2 бусад definition-ийг мөн use-д хүргэж байгаа
-тул энэ доод хязгаар биелсэн.
-
-B1-ийн оролт `[1,1,1,1,1,0,1], threshold=8` тул present=6, best=5,
-expected=3. B2-ийн `[0,1], threshold=1` тул present=1, best=1, expected=5.
-Гаралт: [mvn-verify-alldefs.txt](results/mvn-verify-alldefs.txt),
-[jacoco-alldefs.csv](results/jacoco-alldefs.csv).
-
-Энэ шатанд DataFlowTargets-ийн branch нь **14/16**, line нь **22/24**.
-Null/сөрөг threshold-ийн true ирмэг болон 33-р мөрийн throw хараахан
-хамрагдаагүй. 7-р мөрийн далд constructor мөн хамрагдаагүй байна.
-All-defs хангагдсан нь branch 100% гэсэн үг биш.
-
-
-## B bonus бүрэн DU анализ
+## B bonus
 
 ### B1 CFG
 
@@ -150,7 +110,7 @@ c-use, `38T/F` нь дараагийн элемент байгаа эсэхий�
 50: p-use present, threshold           // >= T/F
 51: def score                         // 49-ийг KILL
 53: p-use best                         // >=5 T/F
-54: c-use score; def score             // RHS use эхэлж болно
+54: c-use score; def score             // RHS use нь шинэ def-ээс өмнө
 56: c-use score
 ```
 
@@ -218,7 +178,45 @@ RHS-д хүрэхгүй; хүснэгтийн 41→41 нь тасалдалгү�
 | present 35→50, 40-өөр дайрсан зам | Эхний 40 нь 35-ийг kill хийнэ; 35→50 нь зөвхөн эерэг ирцгүй үед биелнэ. |
 | threshold 31→32b, 32aT зам | Short circuit-ийн улмаас threshold-ийг энэ зам дээр уншихгүй; 32b нь non-null attendance-тай үед л use болно. |
 
-### B4 ALL DU PAIRS тестүүд
+### B4 ALL DEFS эхний шат
+
+`BonusTest.java`-д `allDefsScoreThree` (B1) ба `allDefsScoreFive` (B2) гэсэн
+**2 тест** all-defs хангана. Gcd-ийн 3 тесттэй нийлээд Maven **5 тест** ажиллуулна.
+
+| Definition | Use-д хүргэх тест ба зам |
+|---|---|
+| attendance 31 | B1: 32aF, 38 init, 38T/F |
+| threshold 31 | B1: 32bF, 50F; B2: 50T |
+| a 38 | B1: 39T/F |
+| present 35 | B1: эхний 40-ийн RHS |
+| present 40 | B1: дараагийн 40-ийн RHS, эцэст нь 50F |
+| streak 36 | B1: эхний 41-ийн RHS |
+| streak 41 | B1: 42T/F, 43, дараагийн 41-ийн RHS |
+| streak 46 | B1: тасалсны дараах 41-ийн RHS |
+| best 37 | B1: эхний 42T |
+| best 43 | B1: дараагийн 42T/F, 53T |
+| score 49 | B1: 49 → 50F → 53T → 54 |
+| score 51 | B2: 51 → 53F → 56 |
+| score 54 | B1: 54 → 56 |
+
+Нэг тест хүрэлцэхгүй. 49-р мөрийн `score` use-д хүрэхэд 50F байх ёстой:
+53T бол 54-ийн RHS-д, 53F бол 56-д уншигдана. Харин 51-ийн definition-д хүрэхэд 50T байх ёстой;
+51 нь 49-ийг use-ээс нь өмнө kill хийнэ. Иймээс score 49 ба 51-ийн
+definition-үүдийг нэг гүйцэтгэлд хоёуланг нь use-д хүргэх боломжгүй, доод
+хязгаар нь 2. Дээрх B1 ба B2 бусад definition-ийг мөн use-д хүргэж байгаа
+тул энэ доод хязгаар биелсэн.
+
+B1-ийн оролт `[1,1,1,1,1,0,1], threshold=8` тул present=6, best=5,
+expected=3. B2-ийн `[0,1], threshold=1` тул present=1, best=1, expected=5.
+Гаралт: [mvn-verify-alldefs.txt](results/mvn-verify-alldefs.txt),
+[jacoco-alldefs.csv](results/jacoco-alldefs.csv).
+
+Энэ шатанд DataFlowTargets-ийн branch нь **14/16**, line нь **22/24**.
+Null/сөрөг threshold-ийн true ирмэг болон 33-р мөрийн throw хараахан
+хамрагдаагүй. 7-р мөрийн далд constructor мөн хамрагдаагүй байна.
+All-defs хангагдсан нь branch 100% гэсэн үг биш.
+
+### B4 ALL DU PAIRS хоёр дахь шат
 
 | ID | Бодит метод | attendance | threshold | Expected |
 |---|---|---|---:|---|
@@ -254,8 +252,99 @@ DU хүснэгт нь нэг use-д аль definition-ээс ирснийг я�
 нь энэ мэдээллийг хэмждэггүй.
 
 
+## C Fault seeding
+
+Мутаци бүрийг `DataFlowTargets.java` дээр түр оруулж, нэг нэгээр нь `mvn clean test`
+ажиллуулсан. Дараа нь `git restore src/main/java/mn/edu/must/sqat/DataFlowTargets.java`
+командаар буцаасан. Мутацитай эх кодыг commit хийгээгүй.
+
+| Мутаци | Тест / Failures | Үр дүн ба log-оос хуулсан мөр | Нотолгоо |
+|---|---|---|---|
+| M1 missing update | 11 / 2 | `[ERROR]   BonusTest.allDefsScoreThree:16 expected: <3> but was: <0>`<br>`[ERROR]   BonusTest.fivePresentDays:47 expected: <8> but was: <5>` | [mvn-test-M1.txt](results/mvn-test-M1.txt) |
+| M2 wrong variable | 11 / 0 | Бүх тест тэнцсэн; мутаци амьд үлдсэн. | [mvn-test-M2.txt](results/mvn-test-M2.txt) |
+| M2 нэмэлт B9 тесттэй | 12 / 1 | `[ERROR]   BonusTest.resetThenLongerRun:67 expected: <0> but was: <3>` | [mvn-test-M2-kill.txt](results/mvn-test-M2-kill.txt) |
+| M3 dead definition | 12 / 0 | Бүх тест тэнцсэн; мутаци амьд үлдсэн. | [mvn-test-M3.txt](results/mvn-test-M3.txt) |
+
+### M2 яагаад амьд үлдсэн бэ
+
+B1-ийн эхний таван эерэг өдөрт best шинэчлэгдэх бүрд present ба streak ижил
+1, 2, 3, 4, 5 утгатай байна. Тасалсны дараах ганц өдөрт streak=1, best=5 тул
+42F болж 43 ажиллахгүй. B2 болон B6-д best шинэчлэгдэх үед мөн present=streak;
+бусад all-DU тестэд best шинэчлэгдэхгүй. Тиймээс best-ийн бүх боломжит DU хосыг
+хамарсан ч `best = present` өөрчлөлт гаралтыг өөрчлөөгүй.
+
+M2 хэвээр байхад `resetThenLongerRun` (B9) тест нэмсэн.
+`attendance=[1,1,0,1,1,1], threshold=6` дээр зөв best=3, present=5 тул score=0.
+Харин M2-ийн сүүлчийн record update дээр streak=3, present=5 учраас best=5
+болон буруу урамшуулал нэмж score=3 гаргана. Энэ нь шинэ DU хос нэмэхгүй;
+аль хэдийн хамрагдсан хосыг present ба streak ялгаатай утгаар шалгаж байгаа юм.
+
+### M3 ба static analysis
+
+M3-ийн `int total = present + best;` нь шинэ definition үүсгэх боловч total-ийг
+дараа нь огт уншихгүй. Иймээс тооцоолсон утга return, нөхцөл эсвэл exception-д
+нөлөөлөхгүй, гаралтыг шалгадаг JUnit тестүүд үүнийг илрүүлэхгүй. `javac -Xlint:all`
+компиляц мөн unused local variable анхааруулга гаргаагүй; бодит гаралт нь
+[javac-M3.txt](results/javac-M3.txt)-д бий.
+
+PMD-ийн `UnusedLocalVariable` static analysis дүрмээр шалгасан бодит анхааруулга:
+
+```text
+DataFlowTargets.java:49 UnusedLocalVariable
+Avoid unused local variables such as 'total'.
+```
+
+PMD тайлан: [pmd-M3.xml](results/pmd-M3.xml), ажиллуулсан гаралт:
+[mvn-pmd-M3.txt](results/mvn-pmd-M3.txt). Энэ нь IDE-ийн unused local variable
+inspection-тэй ижил төрлийн, тест ажиллуулахгүйгээр def/use-ийг шалгадаг арга юм.
+[PMD дүрмийн тайлбар](https://pmd.github.io/pmd/pmd_rules_java_bestpractices.html#unusedlocalvariable).
+
+## Эцсийн баталгаажуулалт
+
+| Шат | Tests run | Branch covered / total | BRANCH_MISSED | Line covered / total | LINE_MISSED |
+|---|---:|---:|---:|---:|---:|
+| [ALL-DEFS](results/mvn-verify-alldefs.txt) / [CSV](results/jacoco-alldefs.csv) | 5 | 14/16 | 2 | 22/24 | 2 |
+| [Branch-only subset](results/mvn-verify-branch-only.txt) / [CSV](results/jacoco-branch-only.csv) | 7 | 16/16 | 0 | 23/24 | 1 |
+| [ALL-DU-PAIRS](results/mvn-verify-alldu.txt) / [CSV](results/jacoco-alldu.csv) | 11 | 16/16 | 0 | 23/24 | 1 |
+| [FINAL](results/mvn-verify-final.txt) / [CSV](results/jacoco-final.csv) | 12 | 16/16 | 0 | 23/24 | 1 |
+
+Эцсийн suite нь bonus-ийн 9, gcd-ийн 3, нийт **12 тесттэй**.
+
+7-р мөрийн `DataFlowTargets()` далд constructor-ийг дуудаагүй тул
+`LINE_MISSED=1` үлдэх нь хэвийн. Түүнийг хамруулахын тулд constructor дуудах
+тест нэмээгүй. `src/main`-ийн Starter-ээс ялгаа хоосон. Бүх log UTF-8 бөгөөд
+JaCoCo-ийн CSV мөрүүдээс дээрх тоог авсан.
+
+### Ажиллуулах
+
+JDK 17 болон Maven суулгасан орчинд:
+
+```bash
+git clone https://github.com/B232270091/lab10.git
+cd lab10
+mvn clean verify
+```
+
+JaCoCo HTML нь `target/site/jacoco/index.html`-д гарна. `target/` Git-д
+орохгүй. Багшийн DOCX, starter ZIP, `__MACOSX/` репод ороогүй.
+
+## Дүгнэлт
+
+DU анализ нэг use-д аль definition-ээс утга ирснийг ялгаж чаддаг тул branch
+хамралтаас илүү нарийн шаардлага өгдөг. Энэ ажилд all-defs-ийг хоёр bonus
+тестээр хангасан ч branch 14/16 байсан. Branch 16/16 болсон subset-д ч таван
+боломжит DU шаардлага дутуу байсан нь хоёр хэмжүүр ижил бишийг харуулсан.
+All-DU-pairs тестүүд M1-ийн дутуу update-ийг илрүүлсэн. Гэхдээ M2 амьд үлдсэн
+нь хосыг дайрахын зэрэгцээ ялгаатай утгаар алдааны нөлөөг return хүртэл гаргах
+шаардлагатайг харууллаа. M3 шиг use-гүй definition-д static analysis хэрэгтэй.
+Хамгийн их шинжилгээ шаардсан хэсэг нь давталт доторх kill болон биелэшгүй
+салааг ялгаж, DU хос бүрд бодит def-clear зам сонгох ажил байв. Гараар ийм
+хүснэгт хөтлөх нь цаг их шаарддаг ч branch тайланд харагдахгүй дутуу тестийг
+ил гаргаж өгсөн.
+
+
 ## AI тусламж
 
 OpenAI Codex-ийг DU шинжилгээ, тест бичих, тест ажиллуулах болон тайлангийн
 найруулга, GitHub-д байршуулахад ашиглав. Хамралт, мутацийн үр дүнг бодит
-Maven гаралттай тулгана.
+Maven гаралт, JaCoCo CSV болон PMD тайлантай тулгасан.

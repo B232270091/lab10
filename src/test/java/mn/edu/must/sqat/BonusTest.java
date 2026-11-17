@@ -59,4 +59,12 @@ class BonusTest {
         assertThrows(IllegalArgumentException.class, () -> DataFlowTargets.bonus(new int[]{}, -1));
     }
 
+
+    @Test
+    @DisplayName("B9 M2-kill: best 43->42F/42T/53F; streak 46->41; score 49->56")
+    void resetThenLongerRun() {
+        // present=5, best=3, threshold=6. M2 wrongly sets best=present=5.
+        assertEquals(0, DataFlowTargets.bonus(new int[]{1, 1, 0, 1, 1, 1}, 6));
+    }
+
 }

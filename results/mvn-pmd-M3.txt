@@ -1,0 +1,16 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------< mn.edu.must.sqat:lab10-static-audit >-----------------
+[INFO] Building lab10-static-audit 1.0
+[INFO]   from pmd-pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- pmd:3.28.0:pmd (default-cli) @ lab10-static-audit ---
+[INFO] PMD version: 7.17.0
+[INFO] Rendering content with org.apache.maven.skins:maven-fluido-skin:jar:2.0.0-M9 skin
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.560 s
+[INFO] Finished at: 2026-11-17T20:08:12+08:00
+[INFO] ------------------------------------------------------------------------
